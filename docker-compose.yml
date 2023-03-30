@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+
+  filipp_sprint_5_api:
+    build: .
+    container_name: filipp_sprint_5_api
+    working_dir: /code
+    command: ./start.sh
+    expose:
+      - "8000"
+    depends_on:
+      - filipp_sprint_5_db
+
+  nginx:
+    image: nginx:1.19.2
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/configs:/etc/nginx/conf.d:ro
+    depends_on:
+      - filipp_sprint_5_api
+    ports:
+      - "80:80"
+
+  filipp_sprint_5_db:
+    image: postgres:15.2
+    container_name: filipp_sprint_5_db
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - PGDATA=/var/lib/postgresql/data/pgdata/
+    volumes:
+      - filipp_sprint_5:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+
+volumes:
+  filipp_sprint_5:
