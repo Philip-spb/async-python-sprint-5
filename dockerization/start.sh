@@ -2,4 +2,4 @@
 echo "migrate..."
 alembic -c src/alembic.ini upgrade head
 echo "start app..."
-uvicorn --app-dir src main:app --host 0.0.0.0 --port 8000
+gunicorn --chdir src -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:8000 src.main:app
