@@ -4,7 +4,10 @@ import pytest
 from alembic.config import Config
 from alembic.command import upgrade, downgrade
 
+from httpx import AsyncClient
+
 from db.db import engine
+from main import app
 
 
 @pytest.fixture(scope='session')
@@ -22,3 +25,9 @@ def test_db_engine(event_loop):
     upgrade(config, 'head')
     yield engine
     downgrade(config, 'base')
+
+
+@pytest.fixture
+async def client():
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac

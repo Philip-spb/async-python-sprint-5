@@ -1,5 +1,6 @@
+import os
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, BinaryIO
 from botocore.exceptions import ClientError
 
 from fastapi import APIRouter, UploadFile, File, status, Depends, Form
@@ -18,6 +19,10 @@ logger = logging.getLogger()
 files_router = APIRouter()
 
 
+def get_file_from_s3(path: str) -> BinaryIO:
+    return s3.get_object(Bucket=app_settings.aws_bucket_name, Key=path)
+
+
 @files_router.get('/download',
                   status_code=status.HTTP_200_OK,
                   tags=['files']
@@ -30,27 +35,30 @@ async def download(
 ) -> Any:
     if is_uuid(path):
         personal_file = await personal_file_crud.get(db=db, id=path, owner_id=user.id)
+
         if not personal_file:
             return None
-        else:
-            file_path = f'{user.id}/'
-            if personal_file.path:
-                file_path = f'{file_path}{personal_file.path}/'
 
-            file_path = f'{file_path}{personal_file.name}'
+        file_path = os.path.join(str(user.id), personal_file.name)
+        if personal_file.path:
+            file_path = os.path.join(str(user.id), personal_file.path, personal_file.name)
+
     else:
-        file_path = f'{user.id}/{path}'
+        file_path = os.path.join(str(user.id), path)
 
-    if not app_settings.is_test:
-        try:
-            obj = s3.get_object(Bucket=app_settings.aws_bucket_name, Key=file_path)
-        except ClientError:
-            logger.info(f'Can\'t find file: {file_path}')
-            return None
+    try:
+        obj = get_file_from_s3(file_path)
+    except ClientError:
+        logger.info(f'Can\'t find file: {file_path}')
+        return None
 
     response = StreamingResponse(obj['Body'], media_type=obj["ContentType"])
-    response.headers["Content-Disposition"] = f"attachment; filename={file_path}"
+    response.headers['Content-Disposition'] = f'attachment; filename={file_path}'
     return response
+
+
+def send_file_to_s3(path: str, data: BinaryIO):
+    s3.put_object(Bucket=app_settings.aws_bucket_name, Key=path, Body=data)
 
 
 @files_router.post('/upload',
@@ -70,7 +78,7 @@ async def upload(
     if not filename:
         filename = file.filename
 
-    file_path = f'{user.id}/{real_path}/{filename}'
+    file_path = os.path.join(str(user.id), real_path, filename)
 
     personal_file = await personal_file_crud.get(
         db=db, name=filename,
@@ -88,8 +96,7 @@ async def upload(
     if not personal_file:
         personal_file = await personal_file_crud.create(db=db, obj_in=new_file)
 
-    if not app_settings.is_test:
-        s3.put_object(Bucket=app_settings.aws_bucket_name, Key=file_path, Body=file.file)
+    send_file_to_s3(file_path, file.file)
 
     logger.info(f'File {file_path} uploaded')
 
@@ -107,7 +114,7 @@ async def user_files(
         db: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_active_user),
 ) -> Any:
-    files = await personal_file_crud.get_multi(db=db, owner_id=user.id)
+    files = await personal_file_crud.get(db=db, multi=True, owner_id=user.id)
 
     user_files_data = UserFile(
         account_id=user.id,

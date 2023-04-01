@@ -1,4 +1,4 @@
-from typing import Generic, Optional, Type, TypeVar, Union, Dict, Any, List
+from typing import Generic, Optional, Type, TypeVar, Union, Dict, Any
 from pydantic import BaseModel
 
 from fastapi.encoders import jsonable_encoder
@@ -17,9 +17,6 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 class Repository:
 
     def get(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def get_multi(self, *args, **kwargs):
         raise NotImplementedError
 
     def create(self, *args, **kwargs):
@@ -43,23 +40,18 @@ class RepositoryDB(Repository, Generic[ModelType, CreateSchemaType, UpdateSchema
     def __init__(self, model: Type[ModelType]):
         self._model = model
 
-    async def get(self, db: AsyncSession, **kwargs) -> Optional[ModelType]:
+    async def get(self, db: AsyncSession, multi=False, **kwargs) -> Optional[ModelType]:
         statement = select(self._model)
         statement = set_params(statement, self._model, kwargs)
 
         results = await db.execute(statement=statement)
-        return results.unique().scalar_one_or_none()
 
-    async def get_multi(
-            self,
-            db: AsyncSession,
-            **kwargs
-    ) -> List[ModelType]:
-        statement = select(self._model)
-        statement = set_params(statement, self._model, kwargs)
+        if multi:
+            data = results.unique().scalars().all()
+        else:
+            data = results.unique().scalar_one_or_none()
 
-        results = await db.execute(statement=statement)
-        return results.unique().scalars().all()
+        return data
 
     async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)

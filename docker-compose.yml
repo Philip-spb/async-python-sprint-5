@@ -12,6 +12,20 @@ services:
     depends_on:
       - filipp_sprint_5_db
 
+  filipp_sprint_5_api_test:
+    build: .
+    working_dir: /code
+    volumes:
+      - ./src/tests:/code/src/tests:ro
+    entrypoint: pytest -s
+    depends_on:
+      - filipp_sprint_5_db_test
+
+  filipp_sprint_5_api_pep8:
+    build: .
+    working_dir: /code
+    entrypoint: flake8
+
   nginx:
     image: nginx:1.19.2
     volumes:
@@ -34,6 +48,16 @@ services:
       - filipp_sprint_5:/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
+
+  filipp_sprint_5_db_test:
+    image: postgres:15.2
+    container_name: filipp_sprint_5_db_test
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
 
 volumes:
   filipp_sprint_5:

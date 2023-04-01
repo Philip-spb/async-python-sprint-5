@@ -18,14 +18,13 @@ s3 = boto3.client('s3', endpoint_url='https://storage.yandexcloud.net/')
 
 
 class AppSettings(BaseSettings):
-    app_title: str
     project_name: str
     project_host: str
     project_port: int
     database_dsn: PostgresDsn
     secret: str
 
-    is_test: bool = False
+    jwt_lifetime: int = 3600
 
     aws_access_key_id: str
     aws_secret_access_key: str
