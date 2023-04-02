@@ -1,22 +1,22 @@
 runserver:
-	docker-compose up -d filipp_sprint_5_api nginx
-
-run_db:
-	docker-compose up -d filipp_sprint_5_db
+	docker-compose up
 
 runlocal:
+	docker-compose up -d filipp_sprint_5_db
 	uvicorn --app-dir src main:app
 
 test:
-	docker-compose up filipp_sprint_5_api_test
-	docker-compose stop filipp_sprint_5_api_test
+	docker-compose build
+	docker-compose run --rm filipp_sprint_5_api pytest -s
 
 pep8:
-	docker-compose up filipp_sprint_5_api_pep8
-	docker-compose stop filipp_sprint_5_api_pep8
+	docker-compose build
+	docker-compose run --rm filipp_sprint_5_api flake8
 
 migrate:
-	alembic -c src/alembic.ini upgrade head
+	docker-compose build
+	docker-compose run --rm filipp_sprint_5_api alembic -c src/alembic.ini upgrade head
 
 rollback_migrations:
-	alembic -c src/alembic.ini downgrade -1
+	docker-compose build
+	docker-compose run --rm filipp_sprint_5_api alembic -c src/alembic.ini downgrade -1

@@ -1,4 +1,7 @@
 #!/bin/sh
+# wait for db
+sleep 3
+
 echo "migrate..."
 alembic -c src/alembic.ini upgrade head
 echo "start app..."
