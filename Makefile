@@ -3,20 +3,17 @@ runserver:
 
 runlocal:
 	docker-compose up -d filipp_sprint_5_db
-	uvicorn --app-dir src main:app
+	uvicorn --app-dir src main:app --reload
+	#gunicorn --reload --chdir src -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:8000 src.main:app
 
 test:
-	docker-compose build
-	docker-compose run --rm filipp_sprint_5_api pytest -s
+	docker-compose run --rm filipp_sprint_5_api pytest
 
 pep8:
-	docker-compose build
 	docker-compose run --rm filipp_sprint_5_api flake8
 
 migrate:
-	docker-compose build
 	docker-compose run --rm filipp_sprint_5_api alembic -c src/alembic.ini upgrade head
 
 rollback_migrations:
-	docker-compose build
 	docker-compose run --rm filipp_sprint_5_api alembic -c src/alembic.ini downgrade -1

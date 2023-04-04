@@ -2,13 +2,13 @@ import os
 from logging import config as logging_config
 
 import boto3
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from pydantic.env_settings import BaseSettings
 from pydantic.networks import PostgresDsn
 
 from core.logger import LOGGING
 
-load_dotenv('.env')
+load_dotenv(find_dotenv())
 
 logging_config.dictConfig(LOGGING)
 
