@@ -33,6 +33,7 @@ async def download(
         user: User = Depends(current_active_user),
         path: str
 ) -> Any:
+    file_name = path.split('/')[-1]
     if is_uuid(path):
         personal_file = await personal_file_crud.get(db=db, id=path, owner_id=user.id)
 
@@ -42,6 +43,7 @@ async def download(
         file_path = os.path.join(str(user.id), personal_file.name)
         if personal_file.path:
             file_path = os.path.join(str(user.id), personal_file.path, personal_file.name)
+            file_name = personal_file.name
 
     else:
         file_path = os.path.join(str(user.id), path)
@@ -53,7 +55,7 @@ async def download(
         return None
 
     response = StreamingResponse(obj['Body'], media_type=obj["ContentType"])
-    response.headers['Content-Disposition'] = f'attachment; filename={file_path}'
+    response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
     return response
 
 
